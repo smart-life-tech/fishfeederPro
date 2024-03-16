@@ -6,7 +6,7 @@
 #include <LiquidCrystal_I2C.h>
 
 #define RELAY_PIN 25      // Replace with the actual pin connected to the relay
-#define SERVO_PIN 34      // Replace with the actual pin connected to the servo
+#define SERVO_PIN 33      // Replace with the actual pin connected to the servo
 #define MAX_FEED_TIMES 4  // Maximum number of feed times
 #define INC_BUTTON_PIN 14 // Increment button pin
 #define DEC_BUTTON_PIN 12 // Decrement button pin
@@ -259,7 +259,7 @@ void setup()
     // Add more alarms for additional feed times if needed
     lcd.init();
     lcd.backlight();
-    lcd.println("fish feeder");
+    lcd.println("fish feeder timer");
     lcd.setCursor(0, 1);
     DateTime now = rtc.now();
     // lcd.print(now.year());
