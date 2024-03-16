@@ -4,9 +4,9 @@
 #include <TimeAlarms.h>
 #include <BluetoothSerial.h>
 #include <LiquidCrystal_I2C.h>
- 
+
 #define RELAY_PIN 25      // Replace with the actual pin connected to the relay
-#define SERVO_PIN 34      // Replace with the actual pin connected to the servo
+#define SERVO_PIN 33      // Replace with the actual pin connected to the servo
 #define MAX_FEED_TIMES 4  // Maximum number of feed times
 #define INC_BUTTON_PIN 14 // Increment button pin
 #define DEC_BUTTON_PIN 12 // Decrement button pin
@@ -165,16 +165,16 @@ void feed(int feedIndex)
     digitalWrite(RELAY_PIN, LOW);  // Turn off the throwing motor
 }
 /**
- * Adds a feed time to the array if there is space.
- *
- * @param hour the hour of the feed time
- * @param minute the minute of the feed time
- * @param duration the duration of the feed time
- *
- * @return void
- *
- * @throws ErrorType none
- */
+   Adds a feed time to the array if there is space.
+
+   @param hour the hour of the feed time
+   @param minute the minute of the feed time
+   @param duration the duration of the feed time
+
+   @return void
+
+   @throws ErrorType none
+*/
 
 void addFeedTime(int hour, int minute, int duration)
 {
@@ -217,22 +217,21 @@ void processBluetoothData()
 }
 
 /**
- * Function to set up the system, initialize pins, set default feed times,
- * and set up alarms for automatic feeding.
- */
+   Function to set up the system, initialize pins, set default feed times,
+   and set up alarms for automatic feeding.
+*/
 void setup()
 {
     Serial.begin(9600);
-    Serial.begin(9600);
-    SerialBT.begin("ESP32_FISH_FEEDER"); // Bluetooth device name
+    Serial.println("Ready to receive data over Bluetooth");
+    // SerialBT.begin("ESP32_FISH_FEEDER"); // Bluetooth device name
 
     if (!rtc.begin())
     {
         Serial.println("Couldn't find RTC");
-        while (1)
-            ;
+        // while (1) ;
     }
-
+    Serial.println("found RTC");
     if (rtc.lostPower())
     {
         Serial.println("RTC lost power, let's set the time!");
@@ -243,7 +242,7 @@ void setup()
 
     // Initialize other pins
     pinMode(RELAY_PIN, OUTPUT);
-
+    Serial.println("found RTC11");
     // Add default feed times (you can customize this based on your needs)
     addFeedTime(6, 0, 10);  // Example: Feed 1 at 6:00 AM for 10 seconds
     addFeedTime(12, 0, 15); // Example: Feed 2 at 12:00 PM for 15 seconds
@@ -260,7 +259,15 @@ void setup()
     // Add more alarms for additional feed times if needed
     lcd.init();
     lcd.backlight();
-
+    lcd.println("fish feeder");
+    lcd.setCursor(0,1);
+    DateTime now = rtc.now();
+    lcd.print(now.year());
+    lcd.print(now.month());
+    lcd.print(now.day());
+    lcd.print(now.hour());
+    lcd.print(now.minute());
+    lcd.print(now.second());
     pinMode(RELAY_PIN, OUTPUT);
     pinMode(INC_BUTTON_PIN, INPUT_PULLUP);
     pinMode(DEC_BUTTON_PIN, INPUT_PULLUP);
