@@ -223,12 +223,12 @@ void processBluetoothData()
 void setup()
 {
     Serial.begin(9600);
-    Serial.println("Ready to receive data over Bluetooth");
+    Serial.println("Ready .....");
     // SerialBT.begin("ESP32_FISH_FEEDER"); // Bluetooth device name
 
     if (!rtc.begin())
     {
-        Serial.println("Couldn't find RTC");
+        Serial.println("Couldn't find RTC.. moving up");
         // while (1) ;
     }
     Serial.println("found RTC");
