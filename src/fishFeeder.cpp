@@ -11,7 +11,7 @@
 #define INC_BUTTON_PIN 14 // Increment button pin
 #define DEC_BUTTON_PIN 12 // Decrement button pin
 #define SET_BUTTON_PIN 26 // Set button pin
-
+int settings_now = 0;
 // int buttonPin
 LiquidCrystal_I2C lcd(0x27, 16, 2); // I2C address, 16 columns, 2 rows
 
@@ -23,7 +23,7 @@ bool incButtonPressed = false;
 bool decButtonPressed = false;
 bool setButtonPressed = false;
 bool settingMode = false;
-int settingIndex = 0; // Index of the current setting being modified (0: hour, 1: minute, 2: duration)
+int settingIndex = -1; // Index of the current setting being modified (0: hour, 1: minute, 2: duration)
 
 struct FeedTime
 {
@@ -41,18 +41,46 @@ void displaySettingMode()
     switch (settingIndex)
     {
     case 0:
-        lcd.print("Set Hour: ");
-        lcd.print(feedTimes[settingIndex].hour);
+        lcd.setCursor(0, 0);
+        lcd.println("Set Hour Feed 1:");
+        lcd.setCursor(0, 1);
+        lcd.print(feedTimes[0].hour);
         break;
     case 1:
-        lcd.print("Set Minute: ");
-        lcd.print(feedTimes[settingIndex].minute);
+        lcd.setCursor(0, 0);
+        lcd.println("Set Min Feed 1:");
+        lcd.setCursor(0, 1);
+        lcd.print(feedTimes[0].minute);
         break;
     case 2:
-        lcd.print("Set Duration: ");
-        lcd.print(feedTimes[settingIndex].duration);
-        lcd.print(" sec");
+        lcd.setCursor(0, 0);
+        lcd.println("Set Hour Feed 2: ");
+        lcd.setCursor(0, 1);
+        lcd.print(feedTimes[1].hour);
         break;
+    case 3:
+        lcd.setCursor(0, 0);
+        lcd.println("Set Min Feed 2: ");
+        lcd.setCursor(0, 1);
+        lcd.print(feedTimes[1].minute);
+        break;
+    case 4:
+        lcd.println("fish feeder time:");
+        lcd.setCursor(0, 1);
+        DateTime now = rtc.now();
+        // lcd.print(now.year());
+        // lcd.print(" ");
+        lcd.print(now.month());
+        lcd.print("/");
+        lcd.print(now.day());
+        lcd.print(" ");
+        lcd.print(now.hour());
+        lcd.print(":");
+        lcd.print(now.minute());
+        lcd.print(":");
+        lcd.print(now.second());
+        break;
+        // Repeat for additional feed times if needed
     }
 }
 
@@ -60,15 +88,19 @@ void incrementSettingValue()
 {
     switch (settingIndex)
     {
-    case 0: // Hour
-        feedTimes[settingIndex].hour = (feedTimes[settingIndex].hour + 1) % 24;
+    case 0: // Hour for Feed 1
+        feedTimes[0].hour = (feedTimes[0].hour + 1) % 24;
         break;
-    case 1: // Minute
-        feedTimes[settingIndex].minute = (feedTimes[settingIndex].minute + 1) % 60;
+    case 1: // Minute for Feed 1
+        feedTimes[0].minute = (feedTimes[0].minute + 1) % 60;
         break;
-    case 2:                                                                             // Duration
-        feedTimes[settingIndex].duration = (feedTimes[settingIndex].duration + 1) % 61; // Cap duration at 60 seconds
+    case 2: // Hour for Feed 2
+        feedTimes[1].hour = (feedTimes[1].hour + 1) % 24;
         break;
+    case 3: // Minute for Feed 2
+        feedTimes[1].minute = (feedTimes[1].minute + 1) % 60;
+        break;
+        // Repeat for additional feed times if needed
     }
     displaySettingMode();
 }
@@ -77,15 +109,19 @@ void decrementSettingValue()
 {
     switch (settingIndex)
     {
-    case 0: // Hour
-        feedTimes[settingIndex].hour = (feedTimes[settingIndex].hour - 1 + 24) % 24;
+    case 0: // Hour for Feed 1
+        feedTimes[0].hour = (feedTimes[0].hour - 1 + 24) % 24;
         break;
-    case 1: // Minute
-        feedTimes[settingIndex].minute = (feedTimes[settingIndex].minute - 1 + 60) % 60;
+    case 1: // Minute for Feed 1
+        feedTimes[0].minute = (feedTimes[0].minute - 1 + 60) % 60;
         break;
-    case 2:                                                                                  // Duration
-        feedTimes[settingIndex].duration = (feedTimes[settingIndex].duration - 1 + 61) % 61; // Cap duration at 60 seconds
+    case 2: // Hour for Feed 2
+        feedTimes[1].hour = (feedTimes[1].hour - 1 + 24) % 24;
         break;
+    case 3: // Minute for Feed 2
+        feedTimes[1].minute = (feedTimes[1].minute - 1 + 60) % 60;
+        break;
+        // Repeat for additional feed times if needed
     }
     displaySettingMode();
 }
@@ -94,52 +130,27 @@ void saveSettings()
 {
     // Save settings to memory or send over Bluetooth
 }
-// Variable to keep track of the number of feed times
+
 void handleButtons()
 {
-    if (digitalRead(INC_BUTTON_PIN) == LOW && !incButtonPressed)
+    if (digitalRead(INC_BUTTON_PIN) == LOW)
     {
-        incButtonPressed = true;
-        if (settingMode)
+        incrementSettingValue();
+    }
+    else if (digitalRead(DEC_BUTTON_PIN) == LOW)
+    {
+        decrementSettingValue();
+    }
+    else if (digitalRead(SET_BUTTON_PIN) == LOW)
+    {
+        settingMode = true;
+        settingIndex++;
+        if (settingIndex > 4)
         {
-            incrementSettingValue();
+            settingIndex = 0;
         }
-    }
-    else if (digitalRead(DEC_BUTTON_PIN) == LOW && !decButtonPressed)
-    {
-        decButtonPressed = true;
-        if (settingMode)
-        {
-            decrementSettingValue();
-        }
-    }
-    else if (digitalRead(SET_BUTTON_PIN) == LOW && !setButtonPressed)
-    {
-        setButtonPressed = true;
-        if (!settingMode)
-        {
-            settingMode = true;
-            displaySettingMode();
-        }
-        else
-        {
-            // Exit setting mode and save settings
-            settingMode = false;
-            saveSettings();
-        }
-    }
-
-    if (digitalRead(INC_BUTTON_PIN) == HIGH)
-    {
-        incButtonPressed = false;
-    }
-    if (digitalRead(DEC_BUTTON_PIN) == HIGH)
-    {
-        decButtonPressed = false;
-    }
-    if (digitalRead(SET_BUTTON_PIN) == HIGH)
-    {
-        setButtonPressed = false;
+        displaySettingMode();
+        saveSettings();
     }
 }
 
@@ -223,12 +234,12 @@ void processBluetoothData()
 void setup()
 {
     Serial.begin(9600);
-    Serial.println("Ready .....");
+    Serial.println("Ready to receive data over Bluetooth");
     // SerialBT.begin("ESP32_FISH_FEEDER"); // Bluetooth device name
 
     if (!rtc.begin())
     {
-        Serial.println("Couldn't find RTC.. moving up");
+        Serial.println("Couldn't find RTC");
         // while (1) ;
     }
     Serial.println("found RTC");
