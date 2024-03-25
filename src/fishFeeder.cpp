@@ -243,7 +243,7 @@ void setup()
         // while (1) ;
     }
     Serial.println("found RTC");
-    if (rtc.lostPower())
+    if (!rtc.lostPower())
     {
         Serial.println("RTC lost power, let's set the time!");
         rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
