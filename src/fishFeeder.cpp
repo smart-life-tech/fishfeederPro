@@ -33,7 +33,7 @@ struct FeedTime
 };
 
 FeedTime feedTimes[MAX_FEED_TIMES]; // Array to store feed times and durations
-int feedCount = 0;
+int feedCount = 3;
 
 void displaySettingMode()
 {
@@ -54,17 +54,29 @@ void displaySettingMode()
         break;
     case 2:
         lcd.setCursor(0, 0);
+        lcd.println("Set Duration1(min):");
+        lcd.setCursor(0, 1);
+        lcd.print(feedTimes[0].duration);
+        break;
+    case 3:
+        lcd.setCursor(0, 0);
         lcd.println("Set Hour Feed 2: ");
         lcd.setCursor(0, 1);
         lcd.print(feedTimes[1].hour);
         break;
-    case 3:
+    case 4:
         lcd.setCursor(0, 0);
         lcd.println("Set Min Feed 2: ");
         lcd.setCursor(0, 1);
         lcd.print(feedTimes[1].minute);
         break;
-    case 4:
+    case 5:
+        lcd.setCursor(0, 0);
+        lcd.println("Set Duration2(min):");
+        lcd.setCursor(0, 1);
+        lcd.print(feedTimes[1].duration);
+        break;
+    case 6:
         lcd.println("fish feeder time:");
         lcd.setCursor(0, 1);
         DateTime now = rtc.now();
@@ -95,10 +107,16 @@ void incrementSettingValue()
         feedTimes[0].minute = (feedTimes[0].minute + 1) % 60;
         break;
     case 2: // Hour for Feed 2
+        feedTimes[0].duration = (feedTimes[0].duration + 1) % 60;
+        break;
+    case 3: // Hour for Feed 2
         feedTimes[1].hour = (feedTimes[1].hour + 1) % 24;
         break;
-    case 3: // Minute for Feed 2
+    case 4: // Minute for Feed 2
         feedTimes[1].minute = (feedTimes[1].minute + 1) % 60;
+        break;
+    case 5: // Hour for Feed 2
+        feedTimes[1].hour = (feedTimes[1].duration + 1) % 60;
         break;
         // Repeat for additional feed times if needed
     }
@@ -116,10 +134,16 @@ void decrementSettingValue()
         feedTimes[0].minute = (feedTimes[0].minute - 1 + 60) % 60;
         break;
     case 2: // Hour for Feed 2
+        feedTimes[0].duration = (feedTimes[0].duration - 1) % 60;
+        break;
+    case 3: // Hour for Feed 2
         feedTimes[1].hour = (feedTimes[1].hour - 1 + 24) % 24;
         break;
-    case 3: // Minute for Feed 2
+    case 4: // Minute for Feed 2
         feedTimes[1].minute = (feedTimes[1].minute - 1 + 60) % 60;
+        break;
+    case 5: // Hour for Feed 2
+        feedTimes[1].hour = (feedTimes[1].duration - 1) % 60;
         break;
         // Repeat for additional feed times if needed
     }
@@ -243,7 +267,7 @@ void setup()
         // while (1) ;
     }
     Serial.println("found RTC");
-    if (!rtc.lostPower())
+    if (rtc.lostPower())
     {
         Serial.println("RTC lost power, let's set the time!");
         rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
