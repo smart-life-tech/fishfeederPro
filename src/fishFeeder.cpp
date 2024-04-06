@@ -4,7 +4,7 @@
 #include <TimeAlarms.h>
 #include <BluetoothSerial.h>
 #include <LiquidCrystal_I2C.h>
-
+#include <EEPROM.h>
 #define RELAY_PIN 25      // Replace with the actual pin connected to the relay
 #define SERVO_PIN 33      // Replace with the actual pin connected to the servo
 #define MAX_FEED_TIMES 4  // Maximum number of feed times
@@ -18,7 +18,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // I2C address, 16 columns, 2 rows
 RTC_DS3231 rtc;
 BluetoothSerial SerialBT;
 Servo dispenserServo;
-
+int old = 9;
 bool incButtonPressed = false;
 bool decButtonPressed = false;
 bool setButtonPressed = false;
@@ -34,19 +34,51 @@ struct FeedTime
 
 FeedTime feedTimes[MAX_FEED_TIMES]; // Array to store feed times and durations
 int feedCount = 3;
+void loadFeedTimesFromEEPROM()
+{
+    int address = 0;
+    for (int i = 0; i < MAX_FEED_TIMES; i++)
+    {
+        EEPROM.get(address, feedTimes[i]);
+        address += sizeof(FeedTime);
+    }
+}
+
+void saveFeedTimesToEEPROM()
+{
+    int address = 0;
+    for (int i = 0; i < MAX_FEED_TIMES; i++)
+    {
+        EEPROM.put(address, feedTimes[i]);
+        address += sizeof(FeedTime);
+    }
+    EEPROM.commit(); // Commit changes to EEPROM
+}
 
 void displaySettingMode()
 {
-    lcd.clear();
+
     switch (settingIndex)
     {
     case 0:
+        if (old != settingIndex)
+        {
+            old = settingIndex;
+            Serial.println("clearing  lcd");
+            lcd.clear();
+        }
         lcd.setCursor(0, 0);
         lcd.println("Set Hour Feed 1:");
         lcd.setCursor(0, 1);
         lcd.print(feedTimes[0].hour);
         break;
     case 1:
+        if (old != settingIndex)
+        {
+            old = settingIndex;
+            Serial.println("clearing  lcd");
+            lcd.clear();
+        }
         lcd.setCursor(0, 0);
         lcd.println("Set Min Feed 1:");
         lcd.setCursor(0, 1);
@@ -59,24 +91,49 @@ void displaySettingMode()
         lcd.print(feedTimes[0].duration);
         break;
     case 3:
+        if (old != settingIndex)
+        {
+            old = settingIndex;
+            Serial.println("clearing  lcd");
+            lcd.clear();
+        }
         lcd.setCursor(0, 0);
         lcd.println("Set Hour Feed 2: ");
         lcd.setCursor(0, 1);
         lcd.print(feedTimes[1].hour);
         break;
     case 4:
+        if (old != settingIndex)
+        {
+            old = settingIndex;
+            Serial.println("clearing  lcd");
+            lcd.clear();
+        }
         lcd.setCursor(0, 0);
         lcd.println("Set Min Feed 2: ");
         lcd.setCursor(0, 1);
         lcd.print(feedTimes[1].minute);
         break;
     case 5:
+        if (old != settingIndex)
+        {
+            old = settingIndex;
+            Serial.println("clearing  lcd");
+            lcd.clear();
+        }
         lcd.setCursor(0, 0);
         lcd.println("Set Duration2(min):");
         lcd.setCursor(0, 1);
         lcd.print(feedTimes[1].duration);
         break;
     case 6:
+        if (old != settingIndex)
+        {
+            old = settingIndex;
+            Serial.println("clearing  lcd");
+            lcd.clear();
+        }
+        lcd.setCursor(0, 0);
         lcd.println("fish feeder time:");
         lcd.setCursor(0, 1);
         DateTime now = rtc.now();
@@ -91,6 +148,7 @@ void displaySettingMode()
         lcd.print(now.minute());
         lcd.print(":");
         lcd.print(now.second());
+        saveFeedTimesToEEPROM();
         break;
         // Repeat for additional feed times if needed
     }
@@ -169,12 +227,16 @@ void handleButtons()
     {
         settingMode = true;
         settingIndex++;
-        if (settingIndex > 4)
+        if (settingIndex > 6)
         {
             settingIndex = 0;
         }
         displaySettingMode();
         saveSettings();
+    }
+    else
+    {
+        displaySettingMode();
     }
 }
 
@@ -191,7 +253,7 @@ time_t dailyAlarm(int hour, int minute, int second)
 void feed(int feedIndex)
 {
     int feedDuration = feedTimes[feedIndex].duration;
-
+    Serial.println("feeding");
     digitalWrite(RELAY_PIN, HIGH); // Engage throwing motor
     dispenserServo.write(0);       // Start the dispenser servo
     delay(feedDuration * 1000);    // Wait for the specified feed duration
@@ -221,7 +283,16 @@ void addFeedTime(int hour, int minute, int duration)
         feedCount++;
     }
 }
-
+void testFeedTime(int hour, int minute, int duration)
+{
+    if (feedCount < MAX_FEED_TIMES)
+    {
+        feedTimes[feedCount].hour = hour;
+        feedTimes[feedCount].minute = minute;
+        feedTimes[feedCount].duration = duration;
+        feedCount++;
+    }
+}
 void feedCallback()
 {
     int feedIndex = Alarm.getTriggeredAlarmId(); // Get the index of the triggered feed time
@@ -279,7 +350,7 @@ void setup()
     pinMode(RELAY_PIN, OUTPUT);
     Serial.println("found RTC11");
     // Add default feed times (you can customize this based on your needs)
-    addFeedTime(6, 0, 10);  // Example: Feed 1 at 6:00 AM for 10 seconds
+    addFeedTime(9, 33, 10); // Example: Feed 1 at 6:00 AM for 10 seconds
     addFeedTime(12, 0, 15); // Example: Feed 2 at 12:00 PM for 15 seconds
     // Add more default feed times if needed
 
@@ -294,7 +365,7 @@ void setup()
     // Add more alarms for additional feed times if needed
     lcd.init();
     lcd.backlight();
-    lcd.println("fish feeder timer");
+    lcd.println("fish feed timer");
     lcd.setCursor(0, 1);
     DateTime now = rtc.now();
     // lcd.print(now.year());
@@ -312,7 +383,10 @@ void setup()
     pinMode(INC_BUTTON_PIN, INPUT_PULLUP);
     pinMode(DEC_BUTTON_PIN, INPUT_PULLUP);
     pinMode(SET_BUTTON_PIN, INPUT_PULLUP);
+    testFeedTime(9, 40, 0);
+    settingIndex = 6;
 
+    loadFeedTimesFromEEPROM();
     Serial.println("Ready to receive data over Bluetooth");
 }
 
